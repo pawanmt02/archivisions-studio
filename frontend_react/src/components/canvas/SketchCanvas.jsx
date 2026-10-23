@@ -129,6 +129,25 @@ const SketchCanvas = forwardRef(({ width = 512, height = 512 }, ref) => {
     },
     exportCanvas: () => {
       return canvasRef.current.toDataURL('image/png');
+    },
+    validateSketch: () => {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+      const MIN_DRAWN_PIXELS = 2500;
+
+      let drawnPixels = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        if (data[i] < 250 || data[i + 1] < 250 || data[i + 2] < 250) {
+          drawnPixels++;
+        }
+      }
+
+      return {
+        valid: drawnPixels >= MIN_DRAWN_PIXELS,
+        drawnPixels,
+      };
     }
   }));
 

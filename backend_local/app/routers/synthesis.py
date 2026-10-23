@@ -7,7 +7,7 @@ from app.models.project import Project
 from app.models.render import RenderHistory
 from app.schemas.render_schema import RenderRequest, RenderResponse, TunnelConfig, TunnelStatus
 from app.utils.security import get_current_user
-from app.services.cv_preprocessor import preprocess_sketch
+from app.services.cv_preprocessor import preprocess_sketch, validate_architectural_intent
 from app.services.prompt_matrix import build_sketch_prompt, build_text_prompt
 from app.services.colab_client import generate_via_sketch, generate_via_text, check_tunnel_health, update_tunnel_url
 from app.services.evaluator import evaluate_generation
@@ -34,8 +34,13 @@ async def generate_render(request: RenderRequest, db: Session = Depends(get_db),
     
     try:
         if request.generation_mode == 'sketch':
-            # Preprocess
+            # Stage 2+3: Preprocess and validate architectural intent
             _, cleaned_sketch = preprocess_sketch(request.sketch_b64)
+            
+            # Hough Line validation — reject non-architectural scribbles
+            validation = validate_architectural_intent(request.sketch_b64)
+            if not validation["is_valid"]:
+                raise HTTPException(status_code=400, detail=validation["message"])
             
             # Prompts
             pos, neg = build_sketch_prompt(request.positive_prompt, request.style_preset)

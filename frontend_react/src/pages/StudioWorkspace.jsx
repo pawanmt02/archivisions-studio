@@ -109,6 +109,18 @@ const StudioWorkspace = () => {
     setIsGenerating(true);
     setLoadingMsgIdx(0);
     try {
+      // ── Stage 1: Client-Side Pixel Complexity Filter ──
+      if (mode === 'sketch' && canvasRef.current) {
+        const validation = canvasRef.current.validateSketch();
+        if (!validation.valid) {
+          setError(
+            `Please draw a more detailed architectural sketch. Simple scribbles are not enough for the AI to generate a perfect structure. (Drawn pixels: ${validation.drawnPixels}, minimum required: 2,500)`
+          );
+          setIsGenerating(false);
+          return;
+        }
+      }
+
       const payload = {
         project_id: parseInt(projectId),
         generation_mode: mode,
